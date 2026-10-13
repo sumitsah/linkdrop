@@ -2,6 +2,6 @@
 module.exports = {
   host: process.env.HOST || 'localhost',
   port: 8080,
-  databaseUrl: process.env.DATABASE_URL,
+  databaseUrl: process.env.PG_URL,
   pageSize: 20,
 };
