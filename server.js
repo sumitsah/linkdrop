@@ -44,9 +44,9 @@ function render(links) {
     <option>Select a category</option>
     <option value="tech">Tech</option>
     <option value="news">News</option>
-    <option value="design">Design</option>
     <option value="finance">Finance</option>
     <option value="gaming">Gaming</option>
+    <option value="study">Study</option>
     <option value="others">Others</option>
   </select>
 
