@@ -6,7 +6,7 @@ const pool = new Pool({ connectionString: config.databaseUrl, max: 5 });
 
 function render(links) {
   const items = links
-    .map((l) => `<li><a href="${l.url}">${l.url}</a><p>${l.note}</p><time>${l.created_at.toISOString()}</time></li>`)
+    .map((l) => `<li><a href="${l.url}">${l.url}</a><p>${l.note}</p><time>${l.created_at.toISOString()}</time>  <span class="category-tag">${l.category || 'others'}</span></li>`)
     .join('\n');
   return `<!doctype html>
 <html lang="en">
@@ -17,16 +17,39 @@ function render(links) {
 <style>
   body{font:16px/1.5 system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 16px;color:#0f172a}
   form{display:grid;gap:8px;margin-bottom:32px}
-  input,textarea,button{font:inherit;padding:8px}
+  input,textarea,button, select{font:inherit;padding:8px}
   li{margin-bottom:16px}
   li p{margin:4px 0}
   time{color:#64748b;font-size:13px}
+  .category-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: #d4d0d0;
+}
+  tag {
+  color: #6b21a8;
+}
 </style>
 </head>
 <body>
 <h1>linkdrop</h1>
 <form method="post" action="/links">
   <input name="url" type="url" placeholder="https://..." required>
+  <select name="categories" required>
+    <option>Select a category</option>
+    <option value="tech">Tech</option>
+    <option value="news">News</option>
+    <option value="design">Design</option>
+    <option value="finance">Finance</option>
+    <option value="gaming">Gaming</option>
+    <option value="others">Others</option>
+  </select>
+
   <textarea name="note" rows="2" placeholder="Why it is worth reading"></textarea>
   <button type="submit">Drop it</button>
 </form>
@@ -39,14 +62,14 @@ ${items}
 
 async function listLinks() {
   const { rows } = await pool.query(
-    'SELECT url, note, created_at FROM links ORDER BY created_at LIMIT $1',
+    'SELECT url, note, category, created_at FROM links ORDER BY created_at LIMIT $1',
     [config.pageSize],
   );
   return rows;
 }
 
-async function addLink(url, note) {
-  await pool.query('INSERT INTO links (url, note) VALUES ($1, $2)', [url, note]);
+async function addLink(url, note, category) {
+  await pool.query('INSERT INTO links (url, note, category) VALUES ($1, $2, $3)', [url, note, category]);
 }
 
 function readBody(req) {
@@ -74,13 +97,14 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && req.url === '/links') {
       const form = await readBody(req);
+      const category = (form.get('categories') || '').trim();
       const url = (form.get('url') || '').trim();
       const note = (form.get('note') || '').trim();
       if (!url) {
         res.writeHead(400, { 'content-type': 'text/plain' });
         return res.end('A link needs a URL.');
       }
-      await addLink(url, note);
+      await addLink(url, note, category);
       res.writeHead(303, { location: '/' });
       return res.end();
     }
